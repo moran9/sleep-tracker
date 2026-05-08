@@ -116,7 +116,7 @@
   .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
   .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
   .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
-  #chart-svg-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;}
+  #chart-svg-wrap{width:100%;overflow:hidden;border-radius:10px;}
   #chart-svg-wrap svg{display:block;min-width:100%;}
 </style>
 </head>
@@ -130,13 +130,6 @@
   </div>
 </header>
 
-<div class="ref-bar" id="ref-bar">
-  <div class="ref-pill">🌙 Nocturno <span id="pill-nocturno">—</span></div>
-  <div class="ref-pill">💤 Siestas <span id="pill-siestas">—</span></div>
-  <div class="ref-pill">⏱ Total <span id="pill-total">—</span></div>
-  <div class="ref-pill">🍼 Tomas noche <span id="pill-tomas">—</span></div>
-</div>
-
 <div class="tabs">
   <div class="tab active" onclick="switchTab('data')">📝 Datos</div>
   <div class="tab" onclick="switchTab('chart')">📊 Gráfico 24h</div>
@@ -145,6 +138,13 @@
 <div id="data-panel" class="panel active">
   <!-- Day selector bar -->
   <div class="day-selector-bar" id="day-selector-bar"></div>
+
+  <div class="ref-bar" id="ref-bar">
+    <div class="ref-pill">🌙 Nocturno <span id="pill-nocturno">—</span></div>
+    <div class="ref-pill">💤 Siestas <span id="pill-siestas">—</span></div>
+    <div class="ref-pill">⏱ Total <span id="pill-total">—</span></div>
+    <div class="ref-pill">🍼 Tomas noche <span id="pill-tomas">—</span></div>
+  </div>
 
   <!-- Modal para nueva fecha -->
   <div id="date-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;">
@@ -187,7 +187,7 @@ const MAX_DAYS=365;
 let currentDay=0, days=[];
 
 // __INIT_DATA__
-const SAVED_DATA=null;
+const SAVED_DATA=[{"date": "06/05", "periods": [{"type": "night", "id": "N1", "enter": "20:15", "sleep": "21:19", "wake": "00:53", "exit": "00:53", "toma": "S"}, {"type": "night", "id": "N2", "enter": "01:10", "sleep": "01:10", "wake": "10:00", "exit": "10:10", "toma": "N"}, {"type": "siesta", "id": "S1", "enter": "11:43", "sleep": "12:22", "wake": "14:00", "exit": "14:00", "toma": "N", "cunaFlag": "S"}, {"type": "siesta", "id": "S2", "enter": "16:29", "sleep": "16:55", "wake": "19:00", "exit": "19:00", "toma": "N", "cunaFlag": "S"}]}, {"date": "07/05", "periods": [{"type": "night", "id": "N1", "enter": "20:50", "sleep": "21:28", "wake": "00:50", "exit": "00:50", "toma": "S"}, {"type": "night", "id": "N2", "enter": "00:58", "sleep": "00:58", "wake": "04:30", "exit": "04:30", "toma": "S"}, {"type": "night", "id": "N3", "enter": "04:38", "sleep": "04:38", "wake": "07:06", "exit": "07:06", "toma": "S"}, {"type": "night", "id": "N4", "enter": "07:19", "sleep": "07:19", "wake": "09:30", "exit": "10:10", "toma": "S"}, {"type": "siesta", "id": "S1", "enter": "12:08", "sleep": "12:19", "wake": "13:49", "exit": "13:49", "toma": "N", "cunaFlag": "S"}, {"type": "siesta", "id": "S2", "enter": "16:49", "sleep": "17:07", "wake": "18:00", "exit": "18:00", "toma": "N", "cunaFlag": "S"}]}, {"date": "08/05", "periods": [{"type": "night", "id": "N1", "enter": "20:22", "sleep": "20:48", "wake": "00:23", "exit": "00:23", "toma": "S"}, {"type": "night", "id": "N2", "enter": "00:27", "sleep": "00:27", "wake": "02:43", "exit": "03:09", "toma": "N"}, {"type": "night", "id": "N3", "enter": "03:09", "sleep": "03:09", "wake": "08:20", "exit": "08:20", "toma": "N"}, {"type": "siesta", "id": "S1", "enter": "10:51", "sleep": "11:05", "wake": "13:42", "exit": "13:42", "toma": "N", "cunaFlag": "S"}]}];
 
 function initDays(){
   if(SAVED_DATA){days=SAVED_DATA;localStorage.setItem('amelia_v4',JSON.stringify(days));return;}
@@ -429,9 +429,9 @@ function saveDayDate(){
 }
 
 // CHART
-const SLOTS=288;
-function slotMin(s){return(19*60+s*5)%1440;}
-function slotMid(s){return(19*60+s*5+2)%1440;}
+const SLOTS=1440;
+function slotMin(s){return(19*60+s)%1440;}
+function slotMid(s){return(19*60+s)%1440;}
 function getCellColor(day,slot){
   const mid=slotMid(slot);
   for(const p of day.periods){
@@ -474,13 +474,12 @@ function renderChart(){
   const HDR=50;
   const TW=190;
 
-  // Calculate PX so the bar fills available width, minimum 2px per slot
   const availW=wrap.clientWidth||800;
   const barAvail=availW-LW-TW;
-  const PX=Math.max(2, Math.floor(barAvail/SLOTS));
+  const PX=barAvail/SLOTS;
 
   const BAR_W=LW+SLOTS*PX;
-  const W=BAR_W+TW;
+  const W=availW;
   const H=HDR+active.length*ROW;
 
   let svg=`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
@@ -501,7 +500,7 @@ function renderChart(){
   svg+=`<line x1="${BAR_W}" y1="0" x2="${BAR_W}" y2="${H}" stroke="#2a2f48" stroke-width="1"/>`;
 
   // Hour lines + labels
-  for(let s=0;s<SLOTS;s+=12){
+  for(let s=0;s<SLOTS;s+=60){
     const min=slotMin(s),h=Math.floor(min/60),x=LW+s*PX;
     const isM=h===0;
     svg+=`<line x1="${x}" y1="${HDR}" x2="${x}" y2="${H}" stroke="${isM?'#3a1525':'#1e2235'}" stroke-width="${isM?1.5:0.5}"/>`;
@@ -534,7 +533,7 @@ function renderChart(){
       // Duration label only on sleep intervals (green or lavender), not awake/cuna
       const isSleep=(bg==='#7ec8a4'||bg==='#b8a0d8');
       if(isSleep&&rw>24){
-        const durMin=(run.end-run.start)*5;
+        const durMin=(run.end-run.start);
         const h=Math.floor(durMin/60),m=durMin%60;
         const lbl=h>0?(m?`${h}h${m}m`:`${h}h`):`${m}m`;
         const tx=rx+rw/2, ty2=y+ROW/2+4;
@@ -560,15 +559,12 @@ function renderChart(){
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  const refBar=document.getElementById('ref-bar');
   if(tab==='data'){
     document.querySelectorAll('.tab')[0].classList.add('active');
     document.getElementById('data-panel').classList.add('active');
-    if(refBar)refBar.style.display='';
   }else{
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('chart-panel').classList.add('active');
-    if(refBar)refBar.style.display='none';
     renderChart();
   }
 }
