@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Amelia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#111318;--surface:#1c1f2e;--surface2:#252838;--border:#2a2f48;
+    --text:#dde3f0;--text2:#6b7494;--green:#6ecfa0;--green-dim:#1a4535;
+    --orange:#e8a87c;--orange-dim:#4a2810;--purple:#b49fdc;--purple-dim:#382060;
+    --teal:#2a8fa0;--teal2:#5ecfdf;--red:#d97070;--radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+  /* HEADER */
+  header{
+    background:linear-gradient(160deg,#0d1a2e 0%,#111827 100%);
+    padding:16px 20px 12px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:12px;
+  }
+  .header-moon{font-size:28px;line-height:1;}
+  .header-text h1{font-size:20px;font-weight:600;letter-spacing:-.3px;color:#eef2ff;}
+  .header-text p{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:.3px;}
+
+  /* REF BAR */
+  .ref-bar{display:flex;overflow-x:auto;gap:6px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);scrollbar-width:none;}
+  .ref-bar::-webkit-scrollbar{display:none;}
+  .ref-pill{flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:11px;color:var(--text2);white-space:nowrap;}
+  .ref-pill span { font-weight: 600; }
+  .ref-pill span.ok   { color: var(--green); }
+  .ref-pill span.warn { color: var(--orange); }
+  .ref-pill span.bad  { color: var(--red); }
+  .ref-pill span.neutral { color: var(--teal2); }
+
+  /* TABS */
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);}
+  .tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.2px;}
+  .tab.active{color:var(--teal2);border-bottom-color:var(--teal2);}
+  .panel{display:none;}.panel.active{display:block;}
+
+  /* DAY NAV */
+  .day-nav{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);}
+  .day-nav .nav-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer;transition:background .15s;}
+  .day-nav .nav-btn:active{background:var(--border);}
+  .day-label{flex:1;text-align:center;font-size:15px;font-weight:600;color:#eef2ff;}
+  .day-selector-bar{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+  .day-selector-bar::-webkit-scrollbar{display:none;}
+  .day-chip{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;font-family:'DM Mono',monospace;}
+  .day-chip.active{background:var(--teal);border-color:var(--teal);color:white;}
+  .day-chip:not(.active):active{background:var(--border);}
+  .btn-add-day{flex-shrink:0;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--teal);background:transparent;color:var(--teal2);transition:all .15s;}
+  .btn-add-day:active{background:rgba(77,191,212,.15);}
+  .day-date-sel{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 4px;font-size:13px;font-family:'DM Mono',monospace;text-align:center;-webkit-appearance:none;appearance:none;}
+  .day-date-sel.dd{width:42px;}.day-date-sel.mm{width:42px;}
+  .day-date-wrap span{color:var(--text2);font-size:13px;}
+
+  /* SECTIONS */
+  .period-section{padding:12px 16px 0;}
+  .section-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .section-header h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.2px;white-space:nowrap;}
+  .section-line{flex:1;height:1px;background:var(--border);}
+  .btn-add{background:transparent;border:1px solid var(--teal);color:var(--teal2);border-radius:8px;padding:4px 14px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:background .15s;}
+  .btn-add:active{background:rgba(77,191,212,.1);}
+
+  /* PERIOD CARDS */
+  .period-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:border-color .2s;}
+  .period-card:has(.period-body.open){border-color:#3a4060;}
+  .period-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer;gap:8px;}
+  .period-label{display:flex;align-items:center;gap:8px;}
+  .period-badge{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:600;letter-spacing:.3px;}
+  .badge-night{background:#122240;color:#7ab8f5;border:1px solid #1e3a6e;}
+  .badge-siesta{background:#122a1e;color:#6adfa0;border:1px solid #1e4a30;}
+  .period-summary{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;flex:1;text-align:right;}
+  .btn-del{background:none;border:none;color:#4a4f6a;font-size:13px;cursor:pointer;padding:0 2px;transition:color .15s;}
+  .btn-del:hover{color:var(--red);}
+
+  .period-body{padding:12px 14px;display:none;border-top:1px solid var(--border);}
+  .period-body.open{display:block;}
+  .time-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .time-field label{display:block;font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:500;letter-spacing:.3px;}
+  .time-field input[type="time"]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:15px;font-family:'DM Mono',monospace;transition:border-color .15s;}
+  .time-field input[type="time"]:focus{outline:none;border-color:var(--teal2);}
+
+  .toggle-row{display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;}
+  .toggle-lbl{font-size:11px;color:var(--text2);flex-shrink:0;}
+  .toggle-btn{flex:1;min-width:36px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;}
+  .toggle-btn.act-sy{background:var(--orange-dim);border-color:var(--orange);color:var(--orange);}
+  .toggle-btn.act-sn{background:#0e2010;border-color:#2a5a30;color:#6adf9a;}
+  .toggle-btn.act-cy{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .toggle-btn.act-cn{background:var(--purple-dim);border-color:var(--purple);color:var(--purple);}
+  .dur-display{text-align:right;font-size:10px;color:var(--text2);font-family:'DM Mono',monospace;margin-top:6px;opacity:.8;}
+
+  /* TOTALS */
+  .totals-bar{margin:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  .totals-bar h3{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;}
+  .totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .total-item{text-align:center;padding:8px 4px;background:var(--surface2);border-radius:10px;}
+  .total-val{font-size:22px;font-weight:600;font-family:'DM Mono',monospace;}
+  .total-lbl{font-size:9px;color:var(--text2);margin-top:3px;letter-spacing:.3px;}
+  .ok{color:var(--green);}.warn{color:var(--orange);}.bad{color:var(--red);}
+
+  /* ACTION BAR */
+  .action-bar{padding:10px 16px 14px;display:flex;gap:8px;align-items:center;}
+  .btn-save{flex:1;padding:12px;border-radius:var(--radius);border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;background:var(--teal);color:white;letter-spacing:.2px;transition:opacity .15s;}
+  .btn-save:active{opacity:.85;}
+  .btn-json{padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:border-color .15s;}
+  .btn-json:active{border-color:var(--teal2);color:var(--teal2);}
+
+  .bottom-pad{height:40px;}
+
+  /* CHART */
+  #chart-panel{padding:12px 16px;}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+  .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+  #chart-svg-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;}
+  #chart-svg-wrap svg{display:block;min-width:100%;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-moon">🌙</div>
+  <div class="header-text">
+    <h1>Amelia</h1>
+    <p>Registro de sueño</p>
+  </div>
+</header>
+
+<div class="ref-bar" id="ref-bar">
+  <div class="ref-pill">🌙 Nocturno <span id="pill-nocturno">—</span></div>
+  <div class="ref-pill">💤 Siestas <span id="pill-siestas">—</span></div>
+  <div class="ref-pill">⏱ Total <span id="pill-total">—</span></div>
+  <div class="ref-pill">🍼 Tomas noche <span id="pill-tomas">—</span></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('data')">📝 Datos</div>
+  <div class="tab" onclick="switchTab('chart')">📊 Gráfico 24h</div>
+</div>
+
+<div id="data-panel" class="panel active">
+  <!-- Day selector bar -->
+  <div class="day-selector-bar" id="day-selector-bar"></div>
+
+  <!-- Modal para nueva fecha -->
+  <div id="date-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:280px;text-align:center;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:16px;color:#eef2ff">¿Qué día es?</div>
+      <div style="display:flex;gap:6px;justify-content:center;align-items:center;margin-bottom:20px;">
+        <select id="modal-dd" class="day-date-sel dd" style="font-size:15px;padding:8px 6px;"></select>
+        <span style="color:var(--text2)">/</span>
+        <select id="modal-mm" class="day-date-sel mm" style="font-size:15px;padding:8px 6px;"></select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="cancelNewDay()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:13px;cursor:pointer;">Cancelar</button>
+        <button onclick="confirmNewDay()" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--teal);color:white;font-size:13px;font-weight:600;cursor:pointer;">Crear día</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="periods-container"></div>
+  <div class="action-bar">
+    <button class="btn-save" onclick="saveToFile()">💾 Guardar</button>
+    <button class="btn-json" onclick="exportJSON()">⬆ Exportar JSON</button>
+    <button class="btn-json" onclick="importJSON()">⬇ Importar JSON</button>
+  </div>
+  <div class="bottom-pad"></div>
+</div>
+
+<div id="chart-panel" class="panel">
+  <div class="chart-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7ec8a4"></div>Dormida en cuna</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b8a0d8"></div>Dormida fuera cuna</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e8b87a"></div>Cuna despierta</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#181b26;border:1px solid #2a2f48"></div>Fuera cuna</div>
+  </div>
+  <div id="chart-svg-wrap"></div>
+  <div class="bottom-pad"></div>
+</div>
+
+<script>
+const MAX_DAYS=365;
+let currentDay=0, days=[];
+
+// __INIT_DATA__
+const SAVED_DATA=null;
+
+function initDays(){
+  if(SAVED_DATA){days=SAVED_DATA;localStorage.setItem('amelia_v4',JSON.stringify(days));return;}
+  const s=localStorage.getItem('amelia_v4');
+  if(s){
+    const parsed=JSON.parse(s);
+    // Support both old (preallocated 365 empty) and new (sparse) format
+    days=parsed.filter(d=>d.date||d.periods.length>0);
+    if(days.length===0) days=[];
+    return;
+  }
+  days=[];
+}
+function save(){localStorage.setItem('amelia_v4',JSON.stringify(days));}
+
+function toMin(t){if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+m;}
+function fmtH(min){if(!min&&min!==0)return'—';const h=Math.floor(min/60),m=Math.round(min%60);return`${h}h${m>0?m+'m':''}`;}
+function dur(a,b){if(a===null||b===null)return 0;let d=b-a;if(d<0)d+=1440;return d;}
+function inPeriod(mid,en,ex){if(en===null||ex===null)return false;if(ex<en)return mid>=en||mid<ex;return mid>=en&&mid<ex;}
+
+function nextId(type){
+  const ps=days[currentDay].periods.filter(p=>p.type===type).length;
+  return(type==='night'?'N':'S')+(ps+1);
+}
+function addPeriod(type){
+  const id=nextId(type);
+  const p={type,id,enter:'',sleep:'',wake:'',exit:'',toma:'N'};
+  if(type==='siesta')p.cunaFlag='S';
+  days[currentDay].periods.push(p);
+  save();renderPeriods();
+  setTimeout(()=>{
+    const b=document.getElementById('body-'+id);
+    if(b){
+      b.classList.add('open');
+      const inp=b.querySelector('input[type="time"]');
+      if(inp) inp.focus();
+    }
+  },40);
+}
+function deletePeriod(id,e){
+  e.stopPropagation();
+  const day=days[currentDay];
+  day.periods=day.periods.filter(p=>p.id!==id);
+  let ni=1,si=1;
+  day.periods.forEach(p=>{p.id=p.type==='night'?'N'+(ni++):'S'+(si++);});
+  save();renderPeriods();
+}
+
+function renderPeriods(){
+  if(days.length===0){
+    document.getElementById('periods-container').innerHTML=
+      '<p style="padding:24px 16px;color:var(--text2);font-size:13px">Pulsa <b>+ Día</b> para empezar a registrar</p>';
+    updateTotals();
+    return;
+  }
+  const day=days[currentDay];
+  const c=document.getElementById('periods-container');
+  c.innerHTML='';
+
+  function mkSection(type,icon,label){
+    const sec=document.createElement('div');sec.className='period-section';
+    const hdr=document.createElement('div');hdr.className='section-header';
+    hdr.innerHTML=`<h3>${icon} ${label}</h3><div class="section-line"></div>`;
+    const btn=document.createElement('button');btn.className='btn-add';btn.textContent='+ Añadir';
+    btn.onclick=()=>addPeriod(type);hdr.appendChild(btn);sec.appendChild(hdr);
+    day.periods.filter(p=>p.type===type).forEach(p=>sec.appendChild(makePeriodCard(p)));
+    return sec;
+  }
+  c.appendChild(mkSection('night','🌙','Bloques nocturnos'));
+  c.appendChild(mkSection('siesta','☀️','Siestas'));
+  updateTotals();
+}
+
+function makePeriodCard(p){
+  const isN=p.type==='night';
+  const card=document.createElement('div');card.className='period-card';
+  const sm=dur(toMin(p.sleep),toMin(p.wake));
+  const sumTxt=sm>0?fmtH(sm)+' dormida':'sin datos';
+  card.innerHTML=`
+    <div class="period-header" onclick="toggleCard('${p.id}')">
+      <div class="period-label"><span class="period-badge ${isN?'badge-night':'badge-siesta'}">${p.id}</span></div>
+      <div class="period-summary" id="sum-${p.id}">${sumTxt}</div>
+      <button class="btn-del" onclick="deletePeriod('${p.id}',event)">✕</button>
+    </div>
+    <div class="period-body" id="body-${p.id}">
+      <div class="time-grid">
+        <div class="time-field"><label>⬇️ Entra cuna</label><input type="time" value="${p.enter}" onchange="updateField('${p.id}','enter',this.value)"></div>
+        <div class="time-field"><label>😴 Se duerme</label><input type="time" value="${p.sleep}" onchange="updateField('${p.id}','sleep',this.value)"></div>
+        <div class="time-field"><label>😳 Se despierta</label><input type="time" value="${p.wake}" onchange="updateField('${p.id}','wake',this.value)"></div>
+        <div class="time-field"><label>⬆️ Sale cuna</label><input type="time" value="${p.exit}" onchange="updateField('${p.id}','exit',this.value)"></div>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">🍼 Toma:</span>
+        <button class="toggle-btn ${p.toma==='S'?'act-sy':''}" onclick="setField('${p.id}','toma','S')">Sí</button>
+        <button class="toggle-btn ${p.toma==='N'?'act-sn':''}" onclick="setField('${p.id}','toma','N')">No</button>
+        ${!isN?`<span class="toggle-lbl" style="margin-left:4px">🛏️ Cuna:</span>
+        <button class="toggle-btn ${p.cunaFlag==='S'?'act-cy':''}" onclick="setField('${p.id}','cunaFlag','S')">Sí</button>
+        <button class="toggle-btn ${p.cunaFlag==='N'?'act-cn':''}" onclick="setField('${p.id}','cunaFlag','N')">No</button>`:''}
+      </div>
+      <div class="dur-display" id="dur-${p.id}">${getDurText(p)}</div>
+    </div>`;
+  return card;
+}
+
+function toggleCard(id){document.getElementById('body-'+id).classList.toggle('open');}
+function getPeriod(id){return days[currentDay].periods.find(p=>p.id===id);}
+function updateField(id,field,val){
+  const p=getPeriod(id);p[field]=val;save();
+  const sm=dur(toMin(p.sleep),toMin(p.wake));
+  document.getElementById('sum-'+id).textContent=sm>0?fmtH(sm)+' dormida':'sin datos';
+  document.getElementById('dur-'+id).textContent=getDurText(p);
+  updateTotals();
+}
+function setField(id,field,val){getPeriod(id)[field]=val;save();renderPeriods();}
+function getDurText(p){
+  const parts=[];
+  if(p.enter&&p.sleep)parts.push('Concilia: '+fmtH(dur(toMin(p.enter),toMin(p.sleep))));
+  if(p.sleep&&p.wake) parts.push('Duerme: '+fmtH(dur(toMin(p.sleep),toMin(p.wake))));
+  if(p.wake&&p.exit)  parts.push('En cuna despierta: '+fmtH(dur(toMin(p.wake),toMin(p.exit))));
+  return parts.join(' · ');
+}
+
+function pillCls(val,lo){
+  if(!val&&val!==0) return 'neutral';
+  const below=lo-val;
+  if(below<=0)  return 'ok';
+  if(below<60)  return 'warn';
+  if(below<120) return 'warn';
+  return 'bad';
+}
+function setPill(id,min,cls){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=min>0?fmtH(min):'—';
+  el.className=cls;
+}
+
+function updateTotals(){
+  if(!days.length){
+    ['pill-nocturno','pill-siestas','pill-total','pill-tomas'].forEach(id=>{
+      const el=document.getElementById(id);if(el){el.textContent='—';el.className='neutral';}
+    });
+    return;
+  }
+  const day=days[currentDay]||{periods:[]};
+  let nightSleep=0,siestaSleep=0,tomas=0;
+  day.periods.forEach(p=>{
+    const s=dur(toMin(p.sleep),toMin(p.wake));
+    if(p.type==='night'){nightSleep+=s;if(p.toma==='S')tomas++;}
+    else siestaSleep+=s;
+  });
+  const totalSleep=nightSleep+siestaSleep;
+  setPill('pill-nocturno', nightSleep,  pillCls(nightSleep,600));
+  setPill('pill-siestas',  siestaSleep, pillCls(siestaSleep,180));
+  setPill('pill-total',    totalSleep,  pillCls(totalSleep,840));
+  const pt=document.getElementById('pill-tomas');
+  if(pt){pt.textContent=tomas||'—';pt.className=tomas>2?'bad':'ok';}
+}
+
+// days is now a sparse array keyed by index, but we store them sorted by date
+// Each entry: { date: 'dd/mm', periods: [] }
+
+function renderDaySelector(){
+  const bar=document.getElementById('day-selector-bar');
+  bar.innerHTML='';
+  days.forEach((d,i)=>{
+    const chip=document.createElement('button');
+    chip.className='day-chip'+(i===currentDay?' active':'');
+    chip.textContent=d.date||`Día ${i+1}`;
+    chip.onclick=()=>{ currentDay=i; renderDaySelector(); renderPeriods(); };
+    bar.appendChild(chip);
+  });
+  const addBtn=document.createElement('button');
+  addBtn.className='btn-add-day';
+  addBtn.textContent='+ Día';
+  addBtn.onclick=openNewDayModal;
+  bar.appendChild(addBtn);
+  // Scroll active chip into view
+  const active=bar.querySelector('.day-chip.active');
+  if(active) active.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+}
+
+function openNewDayModal(){
+  const modal=document.getElementById('date-modal');
+  // Populate selects
+  const ddSel=document.getElementById('modal-dd');
+  const mmSel=document.getElementById('modal-mm');
+  ddSel.innerHTML=''; mmSel.innerHTML='';
+  for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=String(i).padStart(2,'0');o.textContent=o.value;ddSel.appendChild(o);}
+  ['01','02','03','04','05','06','07','08','09','10','11','12'].forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;mmSel.appendChild(o);});
+  // Default to today
+  const now=new Date();
+  ddSel.value=String(now.getDate()).padStart(2,'0');
+  mmSel.value=String(now.getMonth()+1).padStart(2,'0');
+  modal.style.display='flex';
+}
+
+function cancelNewDay(){
+  document.getElementById('date-modal').style.display='none';
+}
+
+function confirmNewDay(){
+  const dd=document.getElementById('modal-dd').value;
+  const mm=document.getElementById('modal-mm').value;
+  const date=`${dd}/${mm}`;
+  document.getElementById('date-modal').style.display='none';
+  days.push({date, periods:[]});
+  currentDay=days.length-1;
+  save();
+  renderDaySelector();
+  renderPeriods();
+}
+
+function prevDay(){if(currentDay>0){currentDay--;renderDaySelector();renderPeriods();}}
+function nextDay(){if(currentDay<days.length-1){currentDay++;renderDaySelector();renderPeriods();}}
+
+function buildDateSelects(){
+  const wrap=document.getElementById('day-date-wrap');
+  const day=days[currentDay];
+  let dd='',mm='';
+  if(day.date){const p=day.date.split('/');dd=p[0];mm=p[1];}
+  const dd_o=Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0'));
+  const mm_o=['01','02','03','04','05','06','07','08','09','10','11','12'];
+  function mkSel(cls,opts,val){
+    const s=document.createElement('select');s.className='day-date-sel '+cls;
+    const b=document.createElement('option');b.value='';b.textContent=cls==='dd'?'dd':'mm';s.appendChild(b);
+    opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;if(o===val)opt.selected=true;s.appendChild(opt);});
+    s.onchange=saveDayDate;return s;
+  }
+  wrap.innerHTML='';
+  wrap.appendChild(mkSel('dd',dd_o,dd));
+  const sep=document.createElement('span');sep.textContent='/';wrap.appendChild(sep);
+  wrap.appendChild(mkSel('mm',mm_o,mm));
+}
+function saveDayDate(){
+  const sels=document.getElementById('day-date-wrap').querySelectorAll('select');
+  const dd=sels[0].value,mm=sels[1].value;
+  days[currentDay].date=(dd&&mm)?`${dd}/${mm}`:'';save();
+}
+
+// CHART
+const SLOTS=288;
+function slotMin(s){return(19*60+s*5)%1440;}
+function slotMid(s){return(19*60+s*5+2)%1440;}
+function getCellColor(day,slot){
+  const mid=slotMid(slot);
+  for(const p of day.periods){
+    const en=toMin(p.enter),ex=toMin(p.exit),sl=toMin(p.sleep),wk=toMin(p.wake);
+    if(!inPeriod(mid,en,ex))continue;
+    const asleep=inPeriod(mid,sl,wk);
+    if(p.type==='night')return asleep?'#7ec8a4':'#e8b87a';
+    if(p.type==='siesta')return asleep?(p.cunaFlag==='S'?'#7ec8a4':'#b8a0d8'):'#e8b87a';
+  }
+  return'#181b26';
+}
+
+function calcDayTotals(day){
+  let nightSleep=0,siestaSleep=0,tomas=0;
+  day.periods.forEach(p=>{
+    const s=dur(toMin(p.sleep),toMin(p.wake));
+    if(p.type==='night'){nightSleep+=s;if(p.toma==='S')tomas++;}
+    else siestaSleep+=s;
+  });
+  return{nightSleep,siestaSleep,total:nightSleep+siestaSleep,tomas};
+}
+
+// Returns color based on how far value is from [lo,hi] range (in minutes)
+function refColor(val,lo){
+  if(!val) return '#4a5270';
+  const below=lo-val;
+  if(below<=0)   return '#6ecfa0';   // verde: igual o por encima
+  if(below<60)   return '#e8d07a';   // amarillo: menos de 1h por debajo
+  if(below<120)  return '#e8a87c';   // naranja: 1-2h por debajo
+  return '#d97070';                  // rojo: 2h o más por debajo
+}
+
+function renderChart(){
+  const wrap=document.getElementById('chart-svg-wrap');
+  const active=days.filter(d=>d.periods.some(p=>p.enter));
+  if(!active.length){wrap.innerHTML='<p style="color:var(--text2);font-size:13px;padding:20px 0">Introduce datos para ver el gráfico</p>';return;}
+
+  const ROW=24;
+  const LW=44;
+  const HDR=50;
+  const TW=190;
+
+  // Calculate PX so the bar fills available width, minimum 2px per slot
+  const availW=wrap.clientWidth||800;
+  const barAvail=availW-LW-TW;
+  const PX=Math.max(2, Math.floor(barAvail/SLOTS));
+
+  const BAR_W=LW+SLOTS*PX;
+  const W=BAR_W+TW;
+  const H=HDR+active.length*ROW;
+
+  let svg=`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=`<rect width="${W}" height="${H}" fill="#111318"/>`;
+
+  active.forEach((_,di)=>{
+    if(di%2===0) svg+=`<rect x="0" y="${HDR+di*ROW}" width="${W}" height="${ROW}" fill="#141720"/>`;
+  });
+
+  // Totals header — columnas en x: 6, 70, 130
+  svg+=`<text x="${BAR_W+6}"   y="${HDR-26}" font-family="monospace" font-size="11" fill="#2e6a4a">≥10h</text>`;
+  svg+=`<text x="${BAR_W+70}"  y="${HDR-26}" font-family="monospace" font-size="11" fill="#2e6a4a">≥3h</text>`;
+  svg+=`<text x="${BAR_W+130}" y="${HDR-26}" font-family="monospace" font-size="11" fill="#2e6a4a">≥14h</text>`;
+  svg+=`<text x="${BAR_W+6}"   y="${HDR-10}" font-family="monospace" font-size="12" fill="#4a5270">noche</text>`;
+  svg+=`<text x="${BAR_W+70}"  y="${HDR-10}" font-family="monospace" font-size="12" fill="#4a5270">siesta</text>`;
+  svg+=`<text x="${BAR_W+130}" y="${HDR-10}" font-family="monospace" font-size="12" fill="#4a5270">total</text>`;
+
+  svg+=`<line x1="${BAR_W}" y1="0" x2="${BAR_W}" y2="${H}" stroke="#2a2f48" stroke-width="1"/>`;
+
+  // Hour lines + labels
+  for(let s=0;s<SLOTS;s+=12){
+    const min=slotMin(s),h=Math.floor(min/60),x=LW+s*PX;
+    const isM=h===0;
+    svg+=`<line x1="${x}" y1="${HDR}" x2="${x}" y2="${H}" stroke="${isM?'#3a1525':'#1e2235'}" stroke-width="${isM?1.5:0.5}"/>`;
+    svg+=`<text x="${x+2}" y="${HDR-10}" font-family="monospace" font-size="12" fill="${isM?'#e05c5c':'#4a5270'}">${String(h).padStart(2,'0')}h</text>`;
+  }
+  svg+=`<line x1="${LW}" y1="${HDR-1}" x2="${BAR_W}" y2="${HDR-1}" fill="none" stroke="#2a2f48" stroke-width="1"/>`;
+
+  active.forEach((day,di)=>{
+    const y=HDR+di*ROW;
+    const realIdx=days.indexOf(day)+1;
+    const lbl=day.date||`D${realIdx}`;
+    svg+=`<text x="${LW-3}" y="${y+ROW/2+4}" font-family="monospace" font-size="12" fill="#6b7494" text-anchor="end">${lbl}</text>`;
+
+    // Build runs of same color, then draw rounded rects + duration labels
+    const runs=[];
+    let rc=null,rs=0;
+    for(let s=0;s<=SLOTS;s++){
+      const col=s<SLOTS?getCellColor(day,s):null;
+      if(col!==rc){
+        if(rc!==null)runs.push({col:rc,start:rs,end:s});
+        rc=col;rs=s;
+      }
+    }
+    runs.forEach(run=>{
+      const bg=run.col,isBg=(bg==='#111318'||bg==='#141720'||bg==='#181b26');
+      if(isBg)return;
+      const rx=LW+run.start*PX, rw=(run.end-run.start)*PX;
+      const r=Math.min(4,ROW/2-1);
+      svg+=`<rect x="${rx}" y="${y+2}" width="${rw}" height="${ROW-4}" rx="${r}" ry="${r}" fill="${bg}"/>`;
+      // Duration label only on sleep intervals (green or lavender), not awake/cuna
+      const isSleep=(bg==='#7ec8a4'||bg==='#b8a0d8');
+      if(isSleep&&rw>24){
+        const durMin=(run.end-run.start)*5;
+        const h=Math.floor(durMin/60),m=durMin%60;
+        const lbl=h>0?(m?`${h}h${m}m`:`${h}h`):`${m}m`;
+        const tx=rx+rw/2, ty2=y+ROW/2+4;
+        svg+=`<text x="${tx}" y="${ty2}" font-family="monospace" font-size="9" fill="rgba(0,0,0,0.55)" text-anchor="middle" dominant-baseline="auto">${lbl}</text>`;
+      }
+    });
+
+    const t=calcDayTotals(day);
+    const fmtVal=m=>m?`${Math.floor(m/60)}h${m%60?Math.round(m%60)+'m':''}`:'-';
+    const cx=refColor(t.nightSleep,600);
+    const cs=refColor(t.siestaSleep,180);
+    const ct=refColor(t.total,840);
+    const ty=y+ROW/2+4;
+    svg+=`<text x="${BAR_W+6}"   y="${ty}" font-family="monospace" font-size="12" fill="${cx}">${fmtVal(t.nightSleep)}</text>`;
+    svg+=`<text x="${BAR_W+70}"  y="${ty}" font-family="monospace" font-size="12" fill="${cs}">${fmtVal(t.siestaSleep)}</text>`;
+    svg+=`<text x="${BAR_W+130}" y="${ty}" font-family="monospace" font-size="12" font-weight="bold" fill="${ct}">${fmtVal(t.total)}</text>`;
+  });
+
+  svg+='</svg>';
+  wrap.innerHTML=svg;
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const refBar=document.getElementById('ref-bar');
+  if(tab==='data'){
+    document.querySelectorAll('.tab')[0].classList.add('active');
+    document.getElementById('data-panel').classList.add('active');
+    if(refBar)refBar.style.display='';
+  }else{
+    document.querySelectorAll('.tab')[1].classList.add('active');
+    document.getElementById('chart-panel').classList.add('active');
+    if(refBar)refBar.style.display='none';
+    renderChart();
+  }
+}
+
+async function saveToFile(){
+  const html=document.documentElement.outerHTML;
+  const updated=html.replace(
+    /\/\/ __INIT_DATA__\s*\nconst SAVED_DATA=.*?;/,
+    `// __INIT_DATA__\nconst SAVED_DATA=${JSON.stringify(days)};`
+  );
+  if(location.protocol!=='file:'){
+    const btn=document.querySelector('.btn-save');
+    const orig=btn.textContent;
+    btn.textContent='Guardando…';btn.disabled=true;
+    try{
+      const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'text/html'},body:updated});
+      const j=await r.json();
+      if(j.ok){btn.textContent='✓ Guardado';setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},2000);}
+      else throw new Error(j.error);
+    }catch(e){
+      alert('Error al guardar en el servidor: '+e.message);
+      btn.textContent=orig;btn.disabled=false;
+    }
+    return;
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([updated],{type:'text/html;charset=utf-8'}));
+  a.download='Amelia.html';a.click();URL.revokeObjectURL(a.href);
+}
+function exportJSON(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(days,null,2)],{type:'application/json'}));
+  a.download='amelia_datos.json';a.click();URL.revokeObjectURL(a.href);
+}
+function importJSON(){
+  const input=document.createElement('input');input.type='file';input.accept='.json';
+  input.onchange=e=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const imported=JSON.parse(ev.target.result);
+        days=imported.filter(d=>d.date||d.periods.length>0);
+        currentDay=0;
+        save();renderDaySelector();renderPeriods();alert('Importado ✓');
+      }catch{alert('Error en el fichero JSON');}
+    };
+    r.readAsText(e.target.files[0]);
+  };input.click();
+}
+
+initDays();
+renderDaySelector();
+renderPeriods();
+
+// Redibuja el gráfico si cambia el ancho de pantalla
+if(typeof ResizeObserver!=='undefined'){
+  new ResizeObserver(()=>{
+    if(document.getElementById('chart-panel').classList.contains('active')) renderChart();
+  }).observe(document.getElementById('chart-svg-wrap'));
+}
+</script>
+</body>
+</html>
