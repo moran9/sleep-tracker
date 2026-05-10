@@ -1,0 +1,10 @@
+:root {
+  --bg:#111318;--surface:#1c1f2e;--surface2:#252838;--border:#2a2f48;
+  --text:#dde3f0;--text2:#6b7494;--green:#6ecfa0;--green-dim:#1a4535;
+  --orange:#e8a87c;--orange-dim:#4a2810;--purple:#b49fdc;--purple-dim:#382060;
+  --teal:#2a8fa0;--teal2:#5ecfdf;--red:#d97070;--radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+#root{width:100%;max-width:100%;}
+button{font-family:'DM Sans',sans-serif;}

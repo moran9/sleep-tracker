@@ -1,1 +1,10 @@
 .claude/
+**/node_modules/
+**/dist/
+**/*.local
+dist-ssr
+*.log
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
