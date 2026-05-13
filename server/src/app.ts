@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import daysRouter from './routes/days';
-import periodsRouter from './routes/periods';
+import daysRouter from './routes/days.ts';
+import periodsRouter from './routes/periods.ts';
 
 const app = express();
 

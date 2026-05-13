@@ -1,6 +1,8 @@
-import { Router, Request, Response } from 'express';
-import pool from '../db';
-import { Period, PeriodRow, rowToPeriod } from '../types';
+import { Router } from 'express';
+import type { Request, Response } from 'express';
+import pool from '../db.ts';
+import { rowToPeriod } from '../types.ts';
+import type { Period, PeriodRow } from '../types.ts';
 
 const router = Router({ mergeParams: true });
 

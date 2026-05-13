@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 
-const pool = new Pool({
-  database: 'sleep_tracker',
-});
+// Reads connection from PG* env vars (PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD).
+// Falls back to local pg defaults in dev.
+const pool = new Pool();
 
 export default pool;

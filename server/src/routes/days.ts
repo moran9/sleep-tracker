@@ -1,6 +1,8 @@
-import { Router, Request, Response } from 'express';
-import pool from '../db';
-import { Day, DayRow, PeriodRow, rowToPeriod } from '../types';
+import { Router } from 'express';
+import type { Request, Response } from 'express';
+import pool from '../db.ts';
+import { rowToPeriod } from '../types.ts';
+import type { Day, DayRow, PeriodRow } from '../types.ts';
 
 const router = Router();
 
