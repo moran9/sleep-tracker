@@ -13,7 +13,14 @@ export default function App() {
   useEffect(() => {
     getDays().then(data => {
       setDays(data);
-      setCurrentDay(data.length > 0 ? data.length - 1 : 0);
+      if (data.length > 0) {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const todayStr = `${dd}/${mm}`;
+        const todayIdx = data.findIndex(d => d.date === todayStr);
+        setCurrentDay(todayIdx !== -1 ? todayIdx : data.length - 1);
+      }
       setLoading(false);
     });
   }, []);

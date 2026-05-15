@@ -1,17 +1,29 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toMin, dur, inPeriod } from '../utils';
 
 const SLOTS = 1440;
+const ROW = 24, LW = 44, HDR = 50, TW = 190;
 function slotMin(s) { return (19 * 60 + s) % 1440; }
+
+// 4 states
+const C_NIGHT_SLEEP = '#5b8dd9'; // night asleep   — blue
+const C_NIGHT_AWAKE = '#2e4a7a'; // night awake    — dark blue
+const C_NAP_SLEEP   = '#e0a855'; // nap asleep     — amber
+const C_NAP_AWAKE   = '#7a5828'; // nap awake      — dark amber
 
 function getCellColor(day, slot) {
   const mid = slotMin(slot);
   for (const p of day.periods) {
-    const en = toMin(p.enter), ex = toMin(p.exit), sl = toMin(p.sleep), wk = toMin(p.wake);
-    if (!inPeriod(mid, en, ex)) continue;
+    const en = p.enter ? toMin(p.enter) : null;
+    const ex = p.exit  ? toMin(p.exit)  : null;
+    const sl = p.sleep ? toMin(p.sleep) : en;
+    const wk = p.wake  ? toMin(p.wake)  : ex;
+    const periodStart = en ?? sl;
+    const periodEnd   = ex ?? wk;
+    if (!inPeriod(mid, periodStart, periodEnd)) continue;
     const asleep = inPeriod(mid, sl, wk);
-    if (p.type === 'night') return asleep ? '#7ec8a4' : '#e8b87a';
-    if (p.type === 'siesta') return asleep ? (p.cunaFlag === 'S' ? '#7ec8a4' : '#b8a0d8') : '#e8b87a';
+    if (p.type === 'night')  return asleep ? C_NIGHT_SLEEP : C_NIGHT_AWAKE;
+    if (p.type === 'siesta') return asleep ? C_NAP_SLEEP   : C_NAP_AWAKE;
   }
   return '#181b26';
 }
@@ -36,7 +48,6 @@ function refColor(val, lo) {
 }
 
 function buildSvg(active, availW) {
-  const ROW = 24, LW = 44, HDR = 50, TW = 190;
   const barAvail = availW - LW - TW;
   const PX = barAvail / SLOTS;
   const BAR_W = LW + SLOTS * PX;
@@ -66,6 +77,7 @@ function buildSvg(active, availW) {
   }
   svg += `<line x1="${LW}" y1="${HDR - 1}" x2="${BAR_W}" y2="${HDR - 1}" fill="none" stroke="#2a2f48" stroke-width="1"/>`;
 
+  // dots are rendered as HTML overlays; just draw the SVG bars here
   active.forEach((day, di) => {
     const y = HDR + di * ROW;
     svg += `<text x="${LW - 3}" y="${y + ROW / 2 + 4}" font-family="monospace" font-size="12" fill="#6b7494" text-anchor="end">${day.date || `D${di + 1}`}</text>`;
@@ -85,7 +97,7 @@ function buildSvg(active, availW) {
       const rx = LW + run.start * PX, rw = (run.end - run.start) * PX;
       const r = Math.min(4, ROW / 2 - 1);
       svg += `<rect x="${rx}" y="${y + 2}" width="${rw}" height="${ROW - 4}" rx="${r}" ry="${r}" fill="${bg}"/>`;
-      const isSleep = (bg === '#7ec8a4' || bg === '#b8a0d8');
+      const isSleep = (bg === C_NIGHT_SLEEP || bg === C_NAP_SLEEP);
       if (isSleep && rw > 24) {
         const durMin = run.end - run.start;
         const h = Math.floor(durMin / 60), m = durMin % 60;
@@ -106,21 +118,57 @@ function buildSvg(active, availW) {
   return svg;
 }
 
+// Returns one overlay rect per period that has a comment
+function calcCommentOverlays(active, availW) {
+  const PX = (availW - LW - TW) / SLOTS;
+  const overlays = [];
+  active.forEach((day, di) => {
+    const y = HDR + di * ROW;
+    day.periods.forEach(p => {
+      if (!p.comment) return;
+      const en = p.enter ? toMin(p.enter) : null;
+      const ex = p.exit  ? toMin(p.exit)  : null;
+      const sl = p.sleep ? toMin(p.sleep) : en;
+      const wk = p.wake  ? toMin(p.wake)  : ex;
+      const periodStart = en ?? sl;
+      const periodEnd   = ex ?? wk;
+      if (periodStart === null || periodEnd === null) return;
+      const startSlot = (periodStart - 19 * 60 + 1440) % 1440;
+      const endSlot   = (periodEnd   - 19 * 60 + 1440) % 1440;
+      const width = ((endSlot - startSlot + SLOTS) % SLOTS) * PX;
+      overlays.push({
+        x: LW + startSlot * PX,
+        y: y + 2,
+        width: Math.max(width, 8),
+        height: ROW - 4,
+        comment: p.comment,
+      });
+    });
+  });
+  return overlays;
+}
+
 export default function ChartPanel({ days }) {
   const wrapRef = useRef(null);
+  const containerRef = useRef(null);
+  const [overlays, setOverlays] = useState([]);
+  const [availW, setAvailW] = useState(800);
 
   useEffect(() => {
-    const active = days.filter(d => d.periods.some(p => p.enter));
+    const active = days.filter(d => d.periods.some(p => p.enter || p.sleep));
     if (!wrapRef.current) return;
 
     if (!active.length) {
       wrapRef.current.innerHTML = '<p style="color:var(--text2);font-size:13px;padding:20px 0">Introduce datos para ver el gráfico</p>';
+      setOverlays([]);
       return;
     }
 
     const render = () => {
-      const availW = wrapRef.current?.clientWidth || 800;
-      wrapRef.current.innerHTML = buildSvg(active, availW);
+      const w = wrapRef.current?.clientWidth || 800;
+      setAvailW(w);
+      wrapRef.current.innerHTML = buildSvg(active, w);
+      setOverlays(calcCommentOverlays(active, w));
     };
 
     render();
@@ -132,12 +180,20 @@ export default function ChartPanel({ days }) {
   return (
     <div id="chart-panel">
       <div className="chart-legend">
-        <div className="legend-item"><div className="legend-dot" style={{background:'#7ec8a4'}}></div>Dormida en cuna</div>
-        <div className="legend-item"><div className="legend-dot" style={{background:'#b8a0d8'}}></div>Dormida fuera cuna</div>
-        <div className="legend-item"><div className="legend-dot" style={{background:'#e8b87a'}}></div>Cuna despierta</div>
-        <div className="legend-item"><div className="legend-dot" style={{background:'#181b26',border:'1px solid #2a2f48'}}></div>Fuera cuna</div>
+        <div className="legend-item"><div className="legend-dot" style={{background:C_NIGHT_SLEEP}}></div>Noche dormida</div>
+        <div className="legend-item"><div className="legend-dot" style={{background:C_NIGHT_AWAKE,border:'1px solid #4a6aaa'}}></div>Noche despierta</div>
+        <div className="legend-item"><div className="legend-dot" style={{background:C_NAP_SLEEP}}></div>Siesta dormida</div>
+        <div className="legend-item"><div className="legend-dot" style={{background:C_NAP_AWAKE,border:'1px solid #aa7838'}}></div>Siesta despierta</div>
       </div>
-      <div id="chart-svg-wrap" ref={wrapRef}></div>
+      <div style={{position:'relative'}} ref={containerRef}>
+        <div id="chart-svg-wrap" ref={wrapRef}></div>
+        {overlays.map((o, i) => (
+          <div key={i} className="chart-comment-overlay" style={{left: o.x, top: o.y, width: o.width, height: o.height}}>
+            <div className="chart-comment-dot" />
+            <div className="chart-comment-tooltip">{o.comment}</div>
+          </div>
+        ))}
+      </div>
       <div className="bottom-pad" />
     </div>
   );

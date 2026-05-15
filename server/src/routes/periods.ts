@@ -6,7 +6,7 @@ import type { Period, PeriodRow } from '../types.ts';
 
 const router = Router({ mergeParams: true });
 
-type PatchableFields = Partial<Pick<Period, 'enter' | 'sleep' | 'wake' | 'exit' | 'toma' | 'cunaFlag' | 'id'>>;
+type PatchableFields = Partial<Pick<Period, 'enter' | 'sleep' | 'wake' | 'exit' | 'toma' | 'cunaFlag' | 'id' | 'comment'>>;
 
 const COL_MAP: Record<keyof PatchableFields, string> = {
   enter: 'enter',
@@ -16,6 +16,7 @@ const COL_MAP: Record<keyof PatchableFields, string> = {
   toma: 'toma',
   cunaFlag: 'cuna_flag',
   id: 'period_id',
+  comment: 'comment',
 };
 
 router.post('/', async (
@@ -23,12 +24,12 @@ router.post('/', async (
   res: Response,
 ) => {
   const { dayId } = req.params;
-  const { id, type, enter, sleep, wake, exit, toma, cunaFlag, sort_order } = req.body;
+  const { id, type, enter, sleep, wake, exit, toma, cunaFlag, comment, sort_order } = req.body;
 
   const result = await pool.query<PeriodRow>(
-    `INSERT INTO periods (day_id, period_id, type, enter, sleep, wake, exit, toma, cuna_flag, sort_order)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-    [dayId, id, type, enter || null, sleep || null, wake || null, exit || null, toma ?? 'N', cunaFlag ?? null, sort_order ?? 0],
+    `INSERT INTO periods (day_id, period_id, type, enter, sleep, wake, exit, toma, cuna_flag, comment, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+    [dayId, id, type, enter || null, sleep || null, wake || null, exit || null, toma ?? 'N', cunaFlag ?? null, comment || null, sort_order ?? 0],
   );
   const row = result.rows[0];
   if (!row) { res.status(500).json({ error: 'Insert failed' }); return; }

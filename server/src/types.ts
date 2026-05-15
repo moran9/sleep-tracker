@@ -1,5 +1,6 @@
 export type PeriodType = 'night' | 'siesta';
 export type TomaFlag = 'S' | 'N';
+export type LugarFlag = 'C' | 'R' | 'V';  // Cuna, Carro, Cuna de viaje
 
 export interface Period {
   id: string;
@@ -9,7 +10,8 @@ export interface Period {
   wake: string;
   exit: string;
   toma: TomaFlag;
-  cunaFlag?: string;
+  cunaFlag: LugarFlag | '';
+  comment: string;
 }
 
 export interface Day {
@@ -35,6 +37,7 @@ export interface PeriodRow {
   toma: TomaFlag;
   cuna_flag: string | null;
   sort_order: number;
+  comment: string | null;
 }
 
 export function rowToPeriod(p: PeriodRow): Period {
@@ -46,6 +49,7 @@ export function rowToPeriod(p: PeriodRow): Period {
     wake: p.wake ?? '',
     exit: p.exit ?? '',
     toma: p.toma,
-    ...(p.type === 'siesta' ? { cunaFlag: p.cuna_flag ?? 'S' } : {}),
+    cunaFlag: (p.cuna_flag ?? '') as LugarFlag | '',
+    comment: p.comment ?? '',
   };
 }

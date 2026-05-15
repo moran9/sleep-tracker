@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { dur, toMin, fmtH } from '../utils';
 import { updatePeriod } from '../api';
 
+function nowHHMM() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
 function getDurText(p) {
   const parts = [];
   if (p.enter && p.sleep) parts.push('Concilia: ' + fmtH(dur(toMin(p.enter), toMin(p.sleep))));
@@ -10,8 +15,9 @@ function getDurText(p) {
   return parts.join(' · ');
 }
 
-export default function PeriodCard({ period, dayId, onDelete, onUpdate }) {
-  const [open, setOpen] = useState(false);
+export default function PeriodCard({ period, dayId, defaultOpen, onDelete, onUpdate }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  const [showComment, setShowComment] = useState(!!period.comment);
   const isN = period.type === 'night';
 
   const sleepMin = dur(toMin(period.sleep), toMin(period.wake));
@@ -35,33 +41,50 @@ export default function PeriodCard({ period, dayId, onDelete, onUpdate }) {
       {open && (
         <div className="period-body">
           <div className="time-grid">
-            <div className="time-field">
-              <label>⬇️ Entra cuna</label>
-              <input type="time" value={period.enter} onChange={e => handleField('enter', e.target.value)} />
-            </div>
-            <div className="time-field">
-              <label>😴 Se duerme</label>
-              <input type="time" value={period.sleep} onChange={e => handleField('sleep', e.target.value)} />
-            </div>
-            <div className="time-field">
-              <label>😳 Se despierta</label>
-              <input type="time" value={period.wake} onChange={e => handleField('wake', e.target.value)} />
-            </div>
-            <div className="time-field">
-              <label>⬆️ Sale cuna</label>
-              <input type="time" value={period.exit} onChange={e => handleField('exit', e.target.value)} />
-            </div>
+            {[
+              { field: 'enter', label: '⬇️ Acostada' },
+              { field: 'sleep', label: '😴 Dormida' },
+              { field: 'wake',  label: '😳 Despierta' },
+              { field: 'exit',  label: '⬆️ Arriba' },
+            ].map(({ field, label }) => (
+              <div className="time-field" key={field}>
+                <label>{label}</label>
+                <div className="time-input-row">
+                  <button className="btn-now" onClick={() => handleField(field, nowHHMM())}>🕐</button>
+                  <input type="time" value={period[field]} onChange={e => handleField(field, e.target.value)} />
+                </div>
+              </div>
+            ))}
           </div>
           <div className="toggle-row">
-            <span className="toggle-lbl">🍼 Toma:</span>
-            <button className={`toggle-btn${period.toma === 'S' ? ' act-sy' : ''}`} onClick={() => handleField('toma', 'S')}>Sí</button>
-            <button className={`toggle-btn${period.toma === 'N' ? ' act-sn' : ''}`} onClick={() => handleField('toma', 'N')}>No</button>
-            {!isN && <>
-              <span className="toggle-lbl" style={{marginLeft:'4px'}}>🛏️ Cuna:</span>
-              <button className={`toggle-btn${period.cunaFlag === 'S' ? ' act-cy' : ''}`} onClick={() => handleField('cunaFlag', 'S')}>Sí</button>
-              <button className={`toggle-btn${period.cunaFlag === 'N' ? ' act-cn' : ''}`} onClick={() => handleField('cunaFlag', 'N')}>No</button>
-            </>}
+            <button
+              className={`chip-toggle${period.toma === 'S' ? ' act-sy' : period.toma === 'N' ? ' act-sn' : ''}`}
+              onClick={() => handleField('toma', period.toma === 'S' ? 'N' : period.toma === 'N' ? '' : 'S')}
+            >🍼 {period.toma === 'S' ? 'Sí' : period.toma === 'N' ? 'No' : '—'}</button>
+            {[
+              { val: 'C', label: 'Cuna' },
+              { val: 'R', label: 'Carro' },
+              { val: 'V', label: 'Cuna viaje' },
+            ].map(({ val, label }) => (
+              <button
+                key={val}
+                className={`chip-toggle${period.cunaFlag === val ? ' act-cy' : ''}`}
+                onClick={() => handleField('cunaFlag', period.cunaFlag === val ? '' : val)}
+              >{label}</button>
+            ))}
+            <button
+              className={`chip-toggle${period.comment ? ' act-cy' : ''}`}
+              onClick={() => setShowComment(v => !v)}
+            >💬 Nota</button>
           </div>
+          {showComment && (
+            <textarea
+              className="period-comment"
+              placeholder="Comentario (opcional)…"
+              value={period.comment || ''}
+              onChange={e => handleField('comment', e.target.value)}
+            />
+          )}
           <div className="dur-display">{getDurText(period)}</div>
         </div>
       )}

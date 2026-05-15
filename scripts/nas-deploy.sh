@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ -f .env ]; then
-  NAS_USER=$(grep -E '^NAS_USER=' .env | cut -d '=' -f2-)
-  NAS_HOST=$(grep -E '^NAS_HOST=' .env | cut -d '=' -f2-)
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [ -f "$REPO_ROOT/.env" ]; then
+  NAS_USER=$(grep -E '^NAS_USER=' "$REPO_ROOT/.env" | cut -d '=' -f2-)
+  NAS_HOST=$(grep -E '^NAS_HOST=' "$REPO_ROOT/.env" | cut -d '=' -f2-)
 fi
 
 if [ -z "${NAS_USER:-}" ] || [ -z "${NAS_HOST:-}" ]; then
@@ -13,9 +15,9 @@ fi
 
 NAS_DIR="/var/services/homes/$NAS_USER/sleep-tracker"
 
-echo "Copying docker-compose.yml to NAS..."
+echo "Copying files to NAS..."
 ssh "$NAS_USER@$NAS_HOST" "mkdir -p $NAS_DIR"
-ssh "$NAS_USER@$NAS_HOST" "cat > $NAS_DIR/docker-compose.yml" < docker-compose.yml
+ssh "$NAS_USER@$NAS_HOST" "cat > $NAS_DIR/docker-compose.yml" < "$REPO_ROOT/docker-compose.yml"
 
 echo "Pulling and restarting on NAS..."
 ssh "$NAS_USER@$NAS_HOST" "cd $NAS_DIR && /usr/local/bin/docker compose pull && /usr/local/bin/docker compose up -d"

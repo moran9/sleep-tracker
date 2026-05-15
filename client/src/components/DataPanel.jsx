@@ -6,7 +6,27 @@ import NewDayModal from './NewDayModal';
 
 export default function DataPanel({ days, setDays, currentDay, setCurrentDay }) {
   const [showModal, setShowModal] = useState(false);
+  const [newPeriodId, setNewPeriodId] = useState(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const chipRefs = useRef([]);
+  const barRef = useRef(null);
+
+  function updateScrollState() {
+    const el = barRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateScrollState);
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', updateScrollState); ro.disconnect(); };
+  }, []);
 
   const day = days[currentDay];
 
@@ -44,6 +64,7 @@ export default function DataPanel({ days, setDays, currentDay, setCurrentDay }) 
     setDays(prev => prev.map((d, i) =>
       i === currentDay ? { ...d, periods: [...d.periods, created] } : d
     ));
+    setNewPeriodId(created.id);
   }
 
   async function handleDeletePeriod(periodId) {
@@ -74,18 +95,22 @@ export default function DataPanel({ days, setDays, currentDay, setCurrentDay }) 
 
   return (
     <div>
-      <div className="day-selector-bar">
-        {days.map((d, i) => (
-          <button
-            key={d.id}
-            ref={el => chipRefs.current[i] = el}
-            className={`day-chip${i === currentDay ? ' active' : ''}`}
-            onClick={() => setCurrentDay(i)}
-          >
-            {d.date || `Día ${i + 1}`}
-          </button>
-        ))}
-        <button className="btn-add-day" onClick={() => setShowModal(true)}>+ Día</button>
+      <div className="day-selector-wrap">
+        <button className="day-scroll-btn" style={{visibility: canScrollLeft ? 'visible' : 'hidden'}} onClick={() => barRef.current.scrollBy({ left: -120, behavior: 'smooth' })}>‹</button>
+        <div className="day-selector-bar" ref={barRef}>
+          {days.map((d, i) => (
+            <button
+              key={d.id}
+              ref={el => chipRefs.current[i] = el}
+              className={`day-chip${i === currentDay ? ' active' : ''}`}
+              onClick={() => setCurrentDay(i)}
+            >
+              {d.date || `Día ${i + 1}`}
+            </button>
+          ))}
+          <button className="btn-add-day" onClick={() => setShowModal(true)}>+ Día</button>
+        </div>
+        <button className="day-scroll-btn" style={{visibility: canScrollRight ? 'visible' : 'hidden'}} onClick={() => barRef.current.scrollBy({ left: 120, behavior: 'smooth' })}>›</button>
       </div>
 
       {day && <RefBar periods={day.periods} />}
@@ -98,15 +123,16 @@ export default function DataPanel({ days, setDays, currentDay, setCurrentDay }) 
         <>
           <div className="period-section">
             <div className="section-header">
-              <h3>🌙 Bloques nocturnos</h3>
+              <h3>🌙 Noche</h3>
               <div className="section-line" />
-              <button className="btn-add" onClick={() => handleAddPeriod('night')}>+ Añadir</button>
+              <button className="btn-add" onClick={() => handleAddPeriod('night')}>+</button>
             </div>
             {nightPeriods.map(p => (
               <PeriodCard
                 key={p.id}
                 period={p}
                 dayId={day.id}
+                defaultOpen={p.id === newPeriodId}
                 onDelete={handleDeletePeriod}
                 onUpdate={handleUpdatePeriod}
               />
@@ -117,13 +143,14 @@ export default function DataPanel({ days, setDays, currentDay, setCurrentDay }) 
             <div className="section-header">
               <h3>☀️ Siestas</h3>
               <div className="section-line" />
-              <button className="btn-add" onClick={() => handleAddPeriod('siesta')}>+ Añadir</button>
+              <button className="btn-add" onClick={() => handleAddPeriod('siesta')}>+</button>
             </div>
             {siestaPeriods.map(p => (
               <PeriodCard
                 key={p.id}
                 period={p}
                 dayId={day.id}
+                defaultOpen={p.id === newPeriodId}
                 onDelete={handleDeletePeriod}
                 onUpdate={handleUpdatePeriod}
               />
