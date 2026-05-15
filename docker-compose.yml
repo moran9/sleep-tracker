@@ -15,7 +15,7 @@ services:
       retries: 5
 
   server:
-    build: ./server
+    image: moran9/sleep-tracker-server:latest
     restart: unless-stopped
     environment:
       PGHOST: db
@@ -28,10 +28,10 @@ services:
         condition: service_healthy
 
   client:
-    build: ./client
+    image: moran9/sleep-tracker-client:latest
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - server
 
